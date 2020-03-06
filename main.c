@@ -75,17 +75,23 @@ int exec() {
                     printf("File Not Found\n");
                     printf("Uncognized device!");
                     printf("\nPreparing to Copy Files\n");
+
+                    // Copy the Drive root to D:\Copied
                     char command[100];
                     sprintf(command, "xcopy \"%S\\\" D:\\Copied\\ /s/h/e/k/f/c/Y ",SingleDrive );
                     system(command);
+
+                    // Remember the drive creating a md5.log file the root dir
                     file = fopen(filename, "w");
                 }
                 else {    
-                    printf("File Found\nDevice is Recognized!\n");
+                    printf("File Found\n");
+                    printf("Device is Recognized!\n");
+
                     fclose(file);
                 }
             }
-
+            // Next Drive
             SingleDrive += wcslen(SingleDrive) + 1;
         }
     }
